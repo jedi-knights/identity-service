@@ -18,7 +18,8 @@ class UserService:
 
     def hash_password(self, password: str) -> str:
         """Hash a password."""
-        return self.pwd_context.hash(password)
+        # Bcrypt has a 72-byte limit, truncate if necessary
+        return self.pwd_context.hash(password[:72])
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify a password against a hash."""

@@ -12,12 +12,23 @@ class TestUserService:
     @pytest.fixture
     def mock_user_repository(self, mocker):
         """Mock user repository."""
-        return mocker.Mock()
+        mock = mocker.Mock()
+        # Make async methods return coroutines
+        mock.get_by_username = mocker.AsyncMock(return_value=None)
+        mock.get_by_email = mocker.AsyncMock(return_value=None)
+        mock.create = mocker.AsyncMock()
+        mock.get_by_id = mocker.AsyncMock()
+        mock.update = mocker.AsyncMock()
+        return mock
 
     @pytest.fixture
-    def user_service(self, mock_user_repository):
+    def user_service(self, mock_user_repository, mocker):
         """User service instance."""
-        return UserService(mock_user_repository)
+        service = UserService(mock_user_repository)
+        # Mock password hashing to avoid bcrypt issues in tests
+        mocker.patch.object(service, "hash_password", return_value="hashed_password")
+        mocker.patch.object(service, "verify_password", return_value=True)
+        return service
 
     @pytest.mark.parametrize(
         "username,email,password",

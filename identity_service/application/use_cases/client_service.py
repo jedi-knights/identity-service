@@ -22,7 +22,8 @@ class ClientService:
 
     def hash_secret(self, secret: str) -> str:
         """Hash a client secret."""
-        return self.pwd_context.hash(secret)
+        # Bcrypt has a 72-byte limit, truncate if necessary
+        return self.pwd_context.hash(secret[:72])
 
     def verify_secret(self, plain_secret: str, hashed_secret: str) -> bool:
         """Verify a client secret against a hash."""

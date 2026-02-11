@@ -12,12 +12,22 @@ class TestClientService:
     @pytest.fixture
     def mock_client_repository(self, mocker):
         """Mock client repository."""
-        return mocker.Mock()
+        mock = mocker.Mock()
+        # Make async methods return coroutines
+        mock.create = mocker.AsyncMock()
+        mock.get_by_id = mocker.AsyncMock()
+        mock.update = mocker.AsyncMock()
+        return mock
 
     @pytest.fixture
-    def client_service(self, mock_client_repository):
+    def client_service(self, mock_client_repository, mocker):
         """Client service instance."""
-        return ClientService(mock_client_repository)
+        service = ClientService(mock_client_repository)
+        # Mock secret hashing to avoid bcrypt issues in tests
+        mocker.patch.object(service, "hash_secret", return_value="hashed_secret")
+        mocker.patch.object(service, "verify_secret", return_value=True)
+        mocker.patch.object(service, "generate_client_secret", return_value="test_secret_123")
+        return service
 
     @pytest.mark.parametrize(
         "client_name,redirect_uris,grant_types,scopes,is_confidential",
