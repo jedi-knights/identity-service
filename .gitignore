@@ -56,8 +56,5 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Alembic
-alembic.ini
-
 # uv
 .uv/

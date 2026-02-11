@@ -1,6 +1,6 @@
 """Unit tests for domain entities."""
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from identity_service.domain.entities import User, Client, Token
@@ -136,7 +136,7 @@ class TestToken:
             client_id=uuid4(),
             access_token="test_token",
             token_type="Bearer",
-            expires_at=datetime.utcnow() + expires_delta,
+            expires_at=datetime.now(timezone.utc) + expires_delta,
             scopes=["read"],
         )
 
@@ -146,7 +146,7 @@ class TestToken:
         """Test token entity creation."""
         user_id = uuid4()
         client_id = uuid4()
-        expires_at = datetime.utcnow() + timedelta(hours=1)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
 
         token = Token(
             user_id=user_id,

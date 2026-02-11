@@ -1,5 +1,5 @@
 """OAuth2 service use cases."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -140,7 +140,7 @@ class OAuth2Service:
             return {"active": False}
 
         # Cache the result
-        ttl = int((token_entity.expires_at - datetime.utcnow()).total_seconds())
+        ttl = int((token_entity.expires_at - datetime.now(timezone.utc)).total_seconds())
         if ttl > 0:
             await self.cache.set(cache_key, "1", ttl)
 

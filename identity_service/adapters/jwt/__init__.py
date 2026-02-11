@@ -1,5 +1,5 @@
 """JWT token service implementation using Authlib."""
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -37,7 +37,7 @@ class JWTTokenService(TokenService):
     ) -> tuple[str, datetime]:
         """Create a new access token."""
         expires_delta_minutes = expires_delta or self.access_token_expire_minutes
-        expires_at = datetime.utcnow() + timedelta(minutes=expires_delta_minutes)
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=expires_delta_minutes)
 
         payload = {
             "sub": str(user_id),
@@ -45,7 +45,7 @@ class JWTTokenService(TokenService):
             "scopes": scopes,
             "iss": self.issuer,
             "exp": int(expires_at.timestamp()),
-            "iat": int(datetime.utcnow().timestamp()),
+            "iat": int(datetime.now(timezone.utc).timestamp()),
             "type": "access",
         }
 
@@ -59,7 +59,7 @@ class JWTTokenService(TokenService):
         scopes: list[str],
     ) -> str:
         """Create a new refresh token."""
-        expires_at = datetime.utcnow() + timedelta(days=self.refresh_token_expire_days)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=self.refresh_token_expire_days)
 
         payload = {
             "sub": str(user_id),
@@ -67,7 +67,7 @@ class JWTTokenService(TokenService):
             "scopes": scopes,
             "iss": self.issuer,
             "exp": int(expires_at.timestamp()),
-            "iat": int(datetime.utcnow().timestamp()),
+            "iat": int(datetime.now(timezone.utc).timestamp()),
             "type": "refresh",
         }
 

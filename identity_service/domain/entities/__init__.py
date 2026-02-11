@@ -1,5 +1,5 @@
 """Domain entities for the identity service."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -22,23 +22,23 @@ class User:
         self.email = email
         self.hashed_password = hashed_password
         self.is_active = is_active
-        self.created_at = created_at or datetime.utcnow()
-        self.updated_at = updated_at or datetime.utcnow()
+        self.created_at = created_at or datetime.now(timezone.utc)
+        self.updated_at = updated_at or datetime.now(timezone.utc)
 
     def deactivate(self) -> None:
         """Deactivate the user account."""
         self.is_active = False
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
 
     def activate(self) -> None:
         """Activate the user account."""
         self.is_active = True
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
 
     def update_password(self, new_hashed_password: str) -> None:
         """Update the user's password."""
         self.hashed_password = new_hashed_password
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
 
 
 class Client:
@@ -65,8 +65,8 @@ class Client:
         self.scopes = scopes or []
         self.is_confidential = is_confidential
         self.is_active = is_active
-        self.created_at = created_at or datetime.utcnow()
-        self.updated_at = updated_at or datetime.utcnow()
+        self.created_at = created_at or datetime.now(timezone.utc)
+        self.updated_at = updated_at or datetime.now(timezone.utc)
 
     def validate_redirect_uri(self, redirect_uri: str) -> bool:
         """Check if the redirect URI is registered for this client."""
@@ -79,7 +79,7 @@ class Client:
     def deactivate(self) -> None:
         """Deactivate the client."""
         self.is_active = False
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
 
 
 class Token:
@@ -105,8 +105,8 @@ class Token:
         self.expires_at = expires_at
         self.scopes = scopes
         self.refresh_token = refresh_token
-        self.created_at = created_at or datetime.utcnow()
+        self.created_at = created_at or datetime.now(timezone.utc)
 
     def is_expired(self) -> bool:
         """Check if the token has expired."""
-        return datetime.utcnow() > self.expires_at
+        return datetime.now(timezone.utc) > self.expires_at
