@@ -1,4 +1,5 @@
 """Domain entities for the identity service."""
+
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID, uuid4
@@ -110,3 +111,63 @@ class Token:
     def is_expired(self) -> bool:
         """Check if the token has expired."""
         return datetime.now(timezone.utc) > self.expires_at
+
+
+class AuthorizationCode:
+    """Authorization code entity for OAuth2 authorization code flow."""
+
+    def __init__(
+        self,
+        code: str,
+        client_id: UUID,
+        redirect_uri: str,
+        scopes: list[str],
+        expires_at: datetime,
+        user_id: Optional[UUID] = None,
+        code_challenge: Optional[str] = None,
+        code_challenge_method: Optional[str] = None,
+        state: Optional[str] = None,
+        code_id: Optional[UUID] = None,
+        created_at: Optional[datetime] = None,
+        is_used: bool = False,
+    ) -> None:
+        self.id = code_id or uuid4()
+        self.code = code
+        self.client_id = client_id
+        self.user_id = user_id
+        self.redirect_uri = redirect_uri
+        self.scopes = scopes
+        self.code_challenge = code_challenge
+        self.code_challenge_method = code_challenge_method
+        self.state = state
+        self.expires_at = expires_at
+        self.is_used = is_used
+        self.created_at = created_at or datetime.now(timezone.utc)
+
+    def is_expired(self) -> bool:
+        """Check if the authorization code has expired."""
+        return datetime.now(timezone.utc) > self.expires_at
+
+    def mark_as_used(self) -> None:
+        """Mark the authorization code as used."""
+        self.is_used = True
+
+    def validate_pkce(self, code_verifier: str) -> bool:
+        """Validate PKCE code_verifier against stored code_challenge."""
+        if not self.code_challenge:
+            return True
+
+        if self.code_challenge_method == "S256":
+            import hashlib
+            import base64
+
+            computed_challenge = (
+                base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode()).digest())
+                .decode()
+                .rstrip("=")
+            )
+            return computed_challenge == self.code_challenge
+        elif self.code_challenge_method == "plain":
+            return code_verifier == self.code_challenge
+        else:
+            return False

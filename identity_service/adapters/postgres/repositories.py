@@ -1,16 +1,24 @@
 """PostgreSQL repository implementations."""
+
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from identity_service.domain.entities import User, Client, Token
-from identity_service.infrastructure.database.models import UserModel, ClientModel, TokenModel
+from identity_service.domain.entities import User, Client, Token, AuthorizationCode
+from identity_service.infrastructure.database.models import (
+    UserModel,
+    ClientModel,
+    TokenModel,
+    AuthorizationCodeModel,
+)
 from identity_service.ports.repositories import (
     UserRepository,
     ClientRepository,
     TokenRepository,
+    AuthorizationCodeRepository,
 )
 
 
@@ -60,9 +68,7 @@ class PostgresUserRepository(UserRepository):
 
     async def get_by_username(self, username: str) -> Optional[User]:
         """Get user by username."""
-        result = await self.session.execute(
-            select(UserModel).where(UserModel.username == username)
-        )
+        result = await self.session.execute(select(UserModel).where(UserModel.username == username))
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
@@ -245,3 +251,90 @@ class PostgresTokenRepository(TokenRepository):
         await self.session.delete(model)
         await self.session.commit()
         return True
+
+
+class PostgresAuthorizationCodeRepository(AuthorizationCodeRepository):
+    """PostgreSQL implementation of AuthorizationCodeRepository."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    def _to_entity(self, model: AuthorizationCodeModel) -> AuthorizationCode:
+        """Convert database model to domain entity."""
+        return AuthorizationCode(
+            code=model.code,
+            client_id=model.client_id,
+            redirect_uri=model.redirect_uri,
+            scopes=model.scopes,
+            expires_at=model.expires_at,
+            user_id=model.user_id,
+            code_challenge=model.code_challenge,
+            code_challenge_method=model.code_challenge_method,
+            state=model.state,
+            code_id=model.id,
+            created_at=model.created_at,
+            is_used=model.is_used,
+        )
+
+    def _to_model(self, entity: AuthorizationCode) -> AuthorizationCodeModel:
+        """Convert domain entity to database model."""
+        return AuthorizationCodeModel(
+            id=entity.id,
+            code=entity.code,
+            client_id=entity.client_id,
+            user_id=entity.user_id,
+            redirect_uri=entity.redirect_uri,
+            scopes=entity.scopes,
+            code_challenge=entity.code_challenge,
+            code_challenge_method=entity.code_challenge_method,
+            state=entity.state,
+            expires_at=entity.expires_at,
+            is_used=entity.is_used,
+            created_at=entity.created_at,
+        )
+
+    async def create(self, auth_code: AuthorizationCode) -> AuthorizationCode:
+        """Create a new authorization code."""
+        model = self._to_model(auth_code)
+        self.session.add(model)
+        await self.session.commit()
+        await self.session.refresh(model)
+        return self._to_entity(model)
+
+    async def get_by_code(self, code: str) -> Optional[AuthorizationCode]:
+        """Get authorization code by code value."""
+        result = await self.session.execute(
+            select(AuthorizationCodeModel).where(AuthorizationCodeModel.code == code)
+        )
+        model = result.scalar_one_or_none()
+        return self._to_entity(model) if model else None
+
+    async def mark_as_used(self, code_id: UUID) -> bool:
+        """Mark an authorization code as used."""
+        model = await self.session.get(AuthorizationCodeModel, code_id)
+        if not model:
+            return False
+
+        model.is_used = True
+        await self.session.commit()
+        return True
+
+    async def delete(self, code_id: UUID) -> bool:
+        """Delete an authorization code."""
+        model = await self.session.get(AuthorizationCodeModel, code_id)
+        if not model:
+            return False
+
+        await self.session.delete(model)
+        await self.session.commit()
+        return True
+
+    async def cleanup_expired(self) -> int:
+        """Delete expired authorization codes and return count deleted."""
+        result = await self.session.execute(
+            delete(AuthorizationCodeModel).where(
+                AuthorizationCodeModel.expires_at < datetime.now(timezone.utc)
+            )
+        )
+        await self.session.commit()
+        return result.rowcount or 0

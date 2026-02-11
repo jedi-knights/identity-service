@@ -1,4 +1,5 @@
 """Main FastAPI application."""
+
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -20,6 +21,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             "identity_service.api.routes.users",
             "identity_service.api.routes.clients",
             "identity_service.api.routes.oauth2",
+            "identity_service.api.routes.authorize",
+            "identity_service.api.dependencies.auth",
         ]
     )
     app.state.container = container
@@ -56,6 +59,10 @@ def create_app() -> FastAPI:
     app.include_router(oauth2.router)
     app.include_router(users.router)
     app.include_router(clients.router)
+
+    from identity_service.api.routes.authorize import router as authorize_router
+
+    app.include_router(authorize_router)
 
     return app
 

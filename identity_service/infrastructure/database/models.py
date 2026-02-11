@@ -1,4 +1,5 @@
 """Database models using SQLAlchemy."""
+
 from datetime import datetime
 from uuid import uuid4
 
@@ -65,6 +66,27 @@ class TokenModel(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     scopes: Mapped[list[str]] = mapped_column(ARRAY(String(100)), nullable=False)
     refresh_token: Mapped[str | None] = mapped_column(Text, unique=True, nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+
+
+class AuthorizationCodeModel(Base):
+    """SQLAlchemy model for authorization codes."""
+
+    __tablename__ = "authorization_codes"
+
+    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    code: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    client_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    redirect_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    scopes: Mapped[list[str]] = mapped_column(ARRAY(String(100)), nullable=False)
+    code_challenge: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    code_challenge_method: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    state: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+    is_used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )

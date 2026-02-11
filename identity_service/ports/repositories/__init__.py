@@ -1,9 +1,10 @@
 """Repository port interfaces."""
+
 from abc import ABC, abstractmethod
 from typing import Optional
 from uuid import UUID
 
-from identity_service.domain.entities import User, Client, Token
+from identity_service.domain.entities import User, Client, Token, AuthorizationCode
 
 
 class UserRepository(ABC):
@@ -85,4 +86,33 @@ class TokenRepository(ABC):
     @abstractmethod
     async def revoke(self, token_id: UUID) -> bool:
         """Revoke a token."""
+        pass
+
+
+class AuthorizationCodeRepository(ABC):
+    """Port interface for authorization code persistence."""
+
+    @abstractmethod
+    async def create(self, auth_code: AuthorizationCode) -> AuthorizationCode:
+        """Create a new authorization code."""
+        pass
+
+    @abstractmethod
+    async def get_by_code(self, code: str) -> Optional[AuthorizationCode]:
+        """Get authorization code by code value."""
+        pass
+
+    @abstractmethod
+    async def mark_as_used(self, code_id: UUID) -> bool:
+        """Mark an authorization code as used."""
+        pass
+
+    @abstractmethod
+    async def delete(self, code_id: UUID) -> bool:
+        """Delete an authorization code."""
+        pass
+
+    @abstractmethod
+    async def cleanup_expired(self) -> int:
+        """Delete expired authorization codes and return count deleted."""
         pass

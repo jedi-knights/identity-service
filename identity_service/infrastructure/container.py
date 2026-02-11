@@ -1,4 +1,5 @@
 """Dependency injection container."""
+
 from authlib.jose import JsonWebKey
 from dependency_injector import containers, providers
 from redis.asyncio import Redis
@@ -8,6 +9,7 @@ from identity_service.adapters.postgres.repositories import (
     PostgresUserRepository,
     PostgresClientRepository,
     PostgresTokenRepository,
+    PostgresAuthorizationCodeRepository,
 )
 from identity_service.adapters.redis import RedisCache
 from identity_service.application.use_cases.client_service import ClientService
@@ -76,6 +78,10 @@ class Container(containers.DeclarativeContainer):
         PostgresTokenRepository, session=providers.Dependency(instance_of=object)
     )
 
+    authorization_code_repository = providers.Factory(
+        PostgresAuthorizationCodeRepository, session=providers.Dependency(instance_of=object)
+    )
+
     # Application services (factory providers)
     user_service = providers.Factory(UserService, user_repository=user_repository)
 
@@ -87,5 +93,6 @@ class Container(containers.DeclarativeContainer):
         client_service=client_service,
         token_service=token_service,
         token_repository=token_repository,
+        authorization_code_repository=authorization_code_repository,
         cache=cache,
     )
